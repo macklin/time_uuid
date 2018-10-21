@@ -4,6 +4,7 @@ import datetime
 import time, calendar
 import threading
 import random
+import operator
 if sys.version_info > (3,):
     long = int
 
@@ -63,17 +64,38 @@ class TimeUUID(uuid.UUID):
     def __repr__(self):
         return u"TimeUUID('{}')".format(super(TimeUUID, self).__str__())
 
-    def __cmp__(self, other):
+    def _cmp_general(self, other, super_method, op):
         # if other isn't a UUID, do whatever it would do WWUUIDD?
         if not isinstance(other, uuid.UUID):
-            return super(TimeUUID, self).__cmp__(other)
+            return super_method(other)
         if self.version == 1 and other.version == 1:
             if self.time == other.time:
-                return super(TimeUUID, self).__cmp__(other)
+                return super_method(other)
             else:
-                return cmp(self.time, other.time)
+                return op(self.time, other.time)
         else:
-            return super(TimeUUID, self).__cmp__(other)
+            return super_method(other)
+
+    def __cmp__(self, other):
+        return self._cmp_general(other, super(TimeUUID, self).__cmp__, cmp)
+
+    def __lt__(self, other):
+        return self._cmp_general(other, super(TimeUUID, self).__lt__, operator.lt)
+
+    def __le__(self, other):
+        return self._cmp_general(other, super(TimeUUID, self).__le__, operator.le)
+
+    def __gt__(self, other):
+        return self._cmp_general(other, super(TimeUUID, self).__gt__, operator.gt)
+
+    def __ge__(self, other):
+        return self._cmp_general(other, super(TimeUUID, self).__ge__, operator.ge)
+
+    def __eq__(self, other):
+        return self._cmp_general(other, super(TimeUUID, self).__eq__, operator.eq)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def get_datetime(self):
         return datetime.datetime.utcfromtimestamp(self.get_timestamp())
